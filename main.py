@@ -6,14 +6,18 @@ import os
 import threading
 import urllib
 from urllib import parse
-import csv  # 调用数据保存文件
 import pandas as pd  # 用于数据输出
 from jsonsearch import JsonSearch
 
 typeLists = ['全部类型', '演出', '展览','本地生活']
-#           上海， 苏州
-areas = [310100, 320500]
-totalResultList = []
+pageNum=4
+
+areas = [
+    {"name":"上海", "code":310100},
+    {"name":"杭州", "code":330100},
+    {"name":"苏州", "code":320500}
+]
+
 resultPath = '漫展信息.xlsx'
 
 def DF2Excel(data_path, data_list, sheet_name_list):
@@ -41,20 +45,17 @@ def get_txt():
         'Cookie': 'HMACCOUNT_BFESS=46935071688D78C1; BDUSS_BFESS=l1SU5nNXJhem5NUUtuUGF3M0tUZFh5V356bE43d3lCc2FQT3dKYThTU1VRMVpqRVFBQUFBJCQAAAAAAAAAAAEAAAACCeP-tv60ztSq1q7N6NfTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJS2LmOUti5jSW; BAIDUID_BFESS=ADBC15F9539AC3DC4E2B4357892C6338:FG=1; ZFY=0tSY2YREU0sWPj7omdNG8nhw:AMIBJMcSjpUUKTA0:BvE:C; H_PS_PSSID='
     }
 
-    # type_project = ''
-    city=''
     for area in areas:
+        totalResultList = []
         i = 0
+        print("开始搜集：" + area.get("name"))
         for type in typeLists:
-            num=4
-            print("开始搜集：" + type + ", 共搜集 " + str(num) + " 页")
             resultList = []
-
             i += 1
-            for page in range(1, num):
+            for page in range(1, pageNum):
                 url = (
                     "https://show.bilibili.com/api/ticket/project/listV2?version=134&page={}&pagesize=16&area={}&filter=&platform=web&p_type={}").format(
-                    page, area, urllib.parse.quote(type))
+                    page, area.get("code"), urllib.parse.quote(type))
                 pageContent = requests.get(url=url, headers=headers).content.decode('utf-8').split('"project_id":')
                 # print('这是第{}页'.format(page))
                 if(len(pageContent) <= 1):
@@ -89,18 +90,20 @@ def get_txt():
 
                     timeRange = jsondata.search_first_value('project_label')
                     addressDetail = jsondata.search_first_value('address_detail')
+                    sale_flag = jsondata.search_first_value('sale_flag')
 
-                    list = [startTime, project_name, addressDetail, timeRange, wantToCount, price_low, hasDancing, activityUrl]
+                    list = [startTime, project_name, addressDetail, timeRange, wantToCount, (price_low if price_low != "" else sale_flag), hasDancing, activityUrl]
                     resultList.append(list)
                     # with open('会员购1/{}.txt'.format(type_project), 'a',encoding='utf-8') as f:  # 写成w的话就会覆盖掉之前保留的数据，最终只显示最后一行数据，需要解码才能识别写入
                     # f.write(project_name + "\n" + city + "\n" + price_low + "\n" + price_high + "\n" + startTime + "\n" + timeRange + "\n"  + location + "\n\n")
                     # f.close()
-                print('第{}页，匹配了{}个活动'.format(page, j))
+                # print('第{}页，匹配了{}个活动'.format(page, j))
             resultList.sort()
             columnHeader = ['开始时间', '名称', '地点', '具体时间范围', '想去人数', '最低票价', '是否有舞台（字符串匹配）', 'Link']
             resultList.insert(0, columnHeader)
             totalResultList.append(pd.DataFrame(resultList))
-        DF2Excel(city + "-" + resultPath, totalResultList, typeLists)
+            print( " - " + type + ": 共 " + str(len(resultList) - 1) + " 条数据")
+        DF2Excel(area.get("name") + "-" + resultPath, totalResultList, typeLists)
 
 thread1 = threading.Thread(name='t1', target=get_txt())
 thread1.start()
