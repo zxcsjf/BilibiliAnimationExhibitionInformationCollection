@@ -46,17 +46,19 @@ def get_txt():
     for area in areas:
         i = 0
         for type in typeLists:
+            num=4
+            print("开始搜集：" + type + ", 共搜集 " + str(num) + " 页")
             resultList = []
 
             i += 1
-            print(type)
-            for page in range(1, 4):
+            for page in range(1, num):
                 url = (
                     "https://show.bilibili.com/api/ticket/project/listV2?version=134&page={}&pagesize=16&area={}&filter=&platform=web&p_type={}").format(
                     page, area, urllib.parse.quote(type))
                 pageContent = requests.get(url=url, headers=headers).content.decode('utf-8').split('"project_id":')
-                print('\n这是第{}页\n'.format(page))
-
+                # print('这是第{}页'.format(page))
+                if(len(pageContent) <= 1):
+                    break
                 j = 0
                 for activity in pageContent[1:]:
                     activityName = re.compile('"project_name":"(.*?)"')
@@ -93,7 +95,7 @@ def get_txt():
                     # with open('会员购1/{}.txt'.format(type_project), 'a',encoding='utf-8') as f:  # 写成w的话就会覆盖掉之前保留的数据，最终只显示最后一行数据，需要解码才能识别写入
                     # f.write(project_name + "\n" + city + "\n" + price_low + "\n" + price_high + "\n" + startTime + "\n" + timeRange + "\n"  + location + "\n\n")
                     # f.close()
-                print('第{}页，共匹配了{}个活动'.format(page, j))
+                print('第{}页，匹配了{}个活动'.format(page, j))
             resultList.sort()
             columnHeader = ['开始时间', '名称', '地点', '具体时间范围', '想去人数', '最低票价', '是否有舞台（字符串匹配）', 'Link']
             resultList.insert(0, columnHeader)
