@@ -77,6 +77,10 @@ def collectEachAreaInfo(area, headers, totalResultList):
         columnHeader = ['开始时间', '名称', '地点', '具体时间范围', '想去人数', '最低票价', '是否有舞台（字符串匹配）',
                         'Link']
         resultList.insert(0, columnHeader)
+        resultList.append([])
+        resultList.append([])
+        resultList.append(['数据来自B站会员购，仅供学习交流用途，严禁商业用途\n项目地址：https://github.com/zxcsjf/BilibiliAnimationExhibitionInformationCollection'])
+
         totalResultList.append(pd.DataFrame(resultList))
         print(" - " + type + ": 共 " + str(len(resultList) - 1) + " 条数据")
 
