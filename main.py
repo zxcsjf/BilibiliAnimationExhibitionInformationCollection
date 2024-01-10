@@ -55,6 +55,7 @@ def getAllInfo():
         totalResultList = []
         collectEachAreaInfo(area, headers, totalResultList)
         DF2Excel(resultFolder + area.get("name") + "-漫展信息.xlsx", totalResultList, typeLists)
+        print("成功写入数据到 " + area.get("name") + "-漫展信息.xlsx")
 
 
 def collectEachAreaInfo(area, headers, totalResultList):
@@ -100,8 +101,8 @@ def collectEachPage(headers, pageContent, resultList):
         project_name = ''.join(activityName.findall(activity))  # 不合并是列表，合并是字符串
         # city = ''.join((cityRe.findall(activity)))
 
-        price_low = ''.join(lowPrice.findall(activity))[0:-2]
-        price_high = ''.join((highPrice.findall(activity)))[0:-2]
+        price_low = float(''.join(lowPrice.findall(activity)))/100
+        price_high = float(''.join((highPrice.findall(activity))))/100
         startTime = ''.join((startTime.findall(activity)))
         activityUrl = ''.join((url.findall(activity)))  # 活动详情页面
         id = activity.split(",")[0]  # id for find the details time range
@@ -117,11 +118,13 @@ def collectEachPage(headers, pageContent, resultList):
 
         timeRange = jsondata.search_first_value('project_label')
         venue_info = JsonSearch(jsondata.search_first_value('venue_info'), mode='j').search_first_value('name')
-        addressDetail = jsondata.search_first_value('address_detail')  + ' ' + venue_info
-        sale_flag = JsonSearch(jsondata.search_first_value('sale_flag'), mode='j').search_first_value('display_name')
+        addressDetail = jsondata.search_first_value('address_detail') + ' ' + venue_info
+        sale_flag = jsondata.search_first_value('saleFlag')
+        sale_flag_display_name = JsonSearch(sale_flag, mode='j').search_first_value('display_name')
+        sale_flag_number = JsonSearch(sale_flag, mode='j').search_first_value('number')
 
         list = [startTime, project_name, addressDetail, timeRange, wantToCount,
-                (price_low if price_low != "" else sale_flag), hasDancing, activityUrl]
+                (sale_flag_display_name if sale_flag_number >= 3 else price_low), hasDancing, activityUrl]
         resultList.append(list)
 
 
