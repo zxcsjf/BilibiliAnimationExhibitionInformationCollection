@@ -75,7 +75,7 @@ def collectEachAreaInfo(area, headers, totalResultList):
             collectEachPage(headers, pageContent, resultList)
             # print('第{}页，匹配了{}个活动'.format(page, j))
         resultList.sort()
-        columnHeader = ['开始时间', '名称', '地点', '具体时间范围', '想去人数', '最低票价', '是否有舞台（字符串匹配）',
+        columnHeader = ['开始时间', '名称', '地点', '单程耗时', '具体时间范围', '想去人数', '最低票价', '是否有舞台（字符串匹配）',
                         'Link']
         resultList.insert(0, columnHeader)
         resultList.append([])
@@ -123,7 +123,7 @@ def collectEachPage(headers, pageContent, resultList):
         sale_flag_display_name = JsonSearch(sale_flag, mode='j').search_first_value('display_name')
         sale_flag_number = JsonSearch(sale_flag, mode='j').search_first_value('number')
 
-        list = [startTime, project_name, addressDetail, timeRange, wantToCount,
+        list = [startTime, project_name, addressDetail, '', timeRange, wantToCount,
                 (sale_flag_display_name if sale_flag_number >= 3 else price_low), hasDancing, activityUrl]
         resultList.append(list)
 
