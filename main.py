@@ -65,18 +65,16 @@ def collectEachAreaInfo(area, headers, totalResultList):
         resultList = []
         i += 1
         for page in range(1, pageNum):
-            #
             url = ("https://show.bilibili.com/api/ticket/project/listV2?version=134&page={}&pagesize=16&area={}&filter=&platform=web&p_type={}").format(
                 page, area.get("code"), urllib.parse.quote(type))
-            pageContent = requests.get(url=url, headers=headers).content.decode('utf-8').split('"project_id":')
-            # print('这是第{}页'.format(page))
-            if (len(pageContent) <= 1):
+            pageContent = requests.get(url=url, headers=headers).content.decode('utf-8')
+            page2JsonData = JsonSearch(pageContent, 's')
+            page2JsonData = page2JsonData.search_first_value(key='result')
+            if (len(page2JsonData) <= 1):
                 break
-            collectEachPage(headers, pageContent, resultList)
-            # print('第{}页，匹配了{}个活动'.format(page, j))
+            collectEachPage(headers, page2JsonData, resultList)
         resultList.sort()
-        columnHeader = ['开始时间', '名称', '地点', '单程耗时', '具体时间范围', '想去人数', '最低票价', '是否有舞台（字符串匹配）',
-                        'Link']
+        columnHeader = ['开始时间', '名称', '地点', '单程耗时', '具体时间范围', '想去人数', '最低票价', 'Link']
         resultList.insert(0, columnHeader)
         resultList.append([])
         resultList.append([])
@@ -85,32 +83,19 @@ def collectEachAreaInfo(area, headers, totalResultList):
         totalResultList.append(pd.DataFrame(resultList))
         print(" - " + type + ": 共 " + str(len(resultList) - 1) + " 条数据")
 
-
-def collectEachPage(headers, pageContent, resultList):
+def collectEachPage(headers, pageJsonNodes, resultList):
     j = 0
-    for activity in pageContent[1:]:
-        activityName = re.compile('"project_name":"(.*?)"')
+    for d in pageJsonNodes[0:]:
         j += 1
-        cityRe = re.compile('"city":"(.*?)"')
-        lowPrice = re.compile('"price_low":([0-9]+)')
-        highPrice = re.compile('"price_high":([0-9]+)')
-        startTime = re.compile('"start_time":"(.*?)"')
-        url = re.compile('"url":"(.*?)"')
-        venueAddress = re.compile('"content":"(.*?)"')
-
-        project_name = ''.join(activityName.findall(activity))  # 不合并是列表，合并是字符串
-        # city = ''.join((cityRe.findall(activity)))
-
-        price_low = float(''.join(lowPrice.findall(activity)))/100
-        price_high = float(''.join((highPrice.findall(activity))))/100
-        startTime = ''.join((startTime.findall(activity)))
-        activityUrl = ''.join((url.findall(activity)))  # 活动详情页面
-        id = activity.split(",")[0]  # id for find the details time range
+        project_name = d['project_name']
+        price_low = d['price_low']/100
+        price_high = d['price_high']/100
+        startTime = d['start_time']
+        id = d['id']  # id for find the details time range
+        activityUrl = ('https://show.bilibili.com/platform/detail.html?id={}&msource=Msearch_colligation').format(id) # 活动详情页面
         url = (("https://show.bilibili.com/api/ticket/project/getV2?version=134&id={}&project_id={}&requestSource=pc-new").format(
             id, id))
         details = requests.get(url=url, headers=headers).content.decode('utf-8')
-        hasDancing = details.__contains__("舞")
-        # venueAddress = ''.join(venueAddress.findall(details.split('场馆地址",')[1].split("}")[0]))
 
         jsondata = JsonSearch(object=details, mode='s')
         wantToCount = JsonSearch(object=jsondata.search_first_value(key='wish_info'),
@@ -124,7 +109,7 @@ def collectEachPage(headers, pageContent, resultList):
         sale_flag_number = JsonSearch(sale_flag, mode='j').search_first_value('number')
 
         list = [startTime, project_name, addressDetail, '', timeRange, wantToCount,
-                (sale_flag_display_name if sale_flag_number >= 3 else price_low), hasDancing, activityUrl]
+                (sale_flag_display_name if sale_flag_number >= 3 else price_low), activityUrl]
         resultList.append(list)
 
 
